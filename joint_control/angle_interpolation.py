@@ -22,6 +22,7 @@
 
 from pid import PIDAgent
 from keyframes import hello
+import numpy as np
 
 
 class AngleInterpolationAgent(PIDAgent):
@@ -35,7 +36,8 @@ class AngleInterpolationAgent(PIDAgent):
 
     def think(self, perception):
         target_joints = self.angle_interpolation(self.keyframes, perception)
-        target_joints['RHipYawPitch'] = target_joints['LHipYawPitch'] # copy missing joint in keyframes
+        if 'LHipYawPitch' in target_joints.keys():
+            target_joints['RHipYawPitch'] = target_joints['LHipYawPitch'] # copy missing joint in keyframes
         self.target_joints.update(target_joints)
         return super(AngleInterpolationAgent, self).think(perception)
 
@@ -63,14 +65,14 @@ class AngleInterpolationAgent(PIDAgent):
                 angles.append(angle)
 
             # Interpolate angles using Bezier interpolation
-            interpolated_angles = self.bezier_interpolation(times, angles)
+            interpolated_angles = self.bezier_interpolation(times, angles, perception.time)
 
             # Populate target joints dictionary
             target_joints[joint_name] = interpolated_angles
-        
+
         return target_joints
 
-    def bezier_interpolation(self, times, angles):
+    def bezier_interpolation(self, times, angles, time):
         # Perform Bezier interpolation
         # For simplicity, let's assume linear interpolation between keyframes
         # You can replace this with actual Bezier interpolation implementation
@@ -80,11 +82,9 @@ class AngleInterpolationAgent(PIDAgent):
         angles = np.array(angles)
         
         # Perform linear interpolation
-        interpolated_angles = np.interp(perception.time, times, angles)
+        interpolated_angles = np.interp(time, times, angles)
         
         return interpolated_angles
-
-        return target_joints
 
 if __name__ == '__main__':
     agent = AngleInterpolationAgent()
