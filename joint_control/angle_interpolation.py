@@ -23,6 +23,8 @@
 from pid import PIDAgent
 from keyframes import hello
 import numpy as np
+from time import sleep
+import threading
 
 
 class AngleInterpolationAgent(PIDAgent):
@@ -33,6 +35,8 @@ class AngleInterpolationAgent(PIDAgent):
                  sync_mode=True):
         super(AngleInterpolationAgent, self).__init__(simspark_ip, simspark_port, teamname, player_id, sync_mode)
         self.keyframes = ([], [], [])
+        self.old_keyframes = ([], [], [])
+        self.keyframe_start_time = 0.0
 
     def think(self, perception):
         target_joints = self.angle_interpolation(self.keyframes, perception)
@@ -44,49 +48,42 @@ class AngleInterpolationAgent(PIDAgent):
     def angle_interpolation(self, keyframes, perception):
         target_joints = {}
         # YOUR CODE HERE
-        
-        # Iterate over each joint
-        for joint_idx, joint_name in enumerate(keyframes[0]):
-            # Extract keyframes for the current joint
-            joint_keyframes = keyframes[2][joint_idx]
 
-            # Initialize lists to store times and angles
-            times = []
-            angles = []
+        if keyframes != ([], [], []):  # new animation
+            self.old_keyframes = keyframes
+            self.keyframes = ([], [], [])
+            self.keyframe_start_time = perception.time
 
-            # Iterate over keyframes
-            for keyframe in joint_keyframes:
-                # Extract angle and handles
-                angle = keyframe[0]
-                handles = keyframe[1:]
+        keyframes = self.old_keyframes
 
-                # Append time and angle to lists
-                times.append(keyframe[1][1])  # Assuming time is the second element in handles
-                angles.append(angle)
+        for i in range(len(keyframes[0])):
+            joint_name = keyframes[0][i]
+            joint_times = keyframes[1][i]
+            joint_keys = keyframes[2][i]
+            joint_angles = [sublist[0] for sublist in joint_keys]
 
-            # Interpolate angles using Bezier interpolation
-            interpolated_angles = self.bezier_interpolation(times, angles, perception.time)
+            # print(joint_name)
+            # print(joint_times)
+            # print(joint_angles)
 
-            # Populate target joints dictionary
-            target_joints[joint_name] = interpolated_angles
+            target_joints[joint_name] = self.bezier_interpolation(joint_times, joint_angles, perception.time - self.keyframe_start_time)
 
         return target_joints
 
     def bezier_interpolation(self, times, angles, time):
-        # Perform Bezier interpolation
-        # For simplicity, let's assume linear interpolation between keyframes
-        # You can replace this with actual Bezier interpolation implementation
-        
-        # Convert lists to numpy arrays for easier manipulation
         times = np.array(times)
         angles = np.array(angles)
-        
-        # Perform linear interpolation
         interpolated_angles = np.interp(time, times, angles)
         
         return interpolated_angles
 
+def keyframe_change():
+    agent.keyframes = hello()  # CHANGE DIFFERENT KEYFRAMES
+    sleep(3)
+    print("restart")
+    agent.keyframes = hello()
+
 if __name__ == '__main__':
     agent = AngleInterpolationAgent()
-    agent.keyframes = hello()  # CHANGE DIFFERENT KEYFRAMES
+    threading.Thread(target=keyframe_change, daemon=True).start()
     agent.run()
