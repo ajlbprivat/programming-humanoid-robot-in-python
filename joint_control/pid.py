@@ -60,10 +60,10 @@ class PIDController(object):
         # Error e = target - sensor
         e = target - sensor
         u1 = self.u  # u(tk-1)
-        y.append(u1 + (self.Kp + self.Ki * self.dt + self.Kd / self.dt) * e - (self.Kp + 2 * self.Kd / self.dt) * self.e1 + self.Kd / self.dt * self.e2)
-        self.u = y[0]  # delay
+        self.y.append(u1 + (self.Kp + self.Ki * self.dt + self.Kd / self.dt) * e - (self.Kp + 2 * self.Kd / self.dt) * self.e1 + self.Kd / self.dt * self.e2)
+        self.u = self.y[0]  # delay
 
-        self.e2 = e1  # e(tk-2)
+        self.e2 = self.e1  # e(tk-2)
         self.e1 = e  # e(tk-1)
 
         return self.u
