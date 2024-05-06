@@ -42,6 +42,47 @@ class AngleInterpolationAgent(PIDAgent):
     def angle_interpolation(self, keyframes, perception):
         target_joints = {}
         # YOUR CODE HERE
+        
+        # Iterate over each joint
+        for joint_idx, joint_name in enumerate(keyframes[0]):
+            # Extract keyframes for the current joint
+            joint_keyframes = keyframes[2][joint_idx]
+
+            # Initialize lists to store times and angles
+            times = []
+            angles = []
+
+            # Iterate over keyframes
+            for keyframe in joint_keyframes:
+                # Extract angle and handles
+                angle = keyframe[0]
+                handles = keyframe[1:]
+
+                # Append time and angle to lists
+                times.append(keyframe[1][1])  # Assuming time is the second element in handles
+                angles.append(angle)
+
+            # Interpolate angles using Bezier interpolation
+            interpolated_angles = self.bezier_interpolation(times, angles)
+
+            # Populate target joints dictionary
+            target_joints[joint_name] = interpolated_angles
+        
+        return target_joints
+
+    def bezier_interpolation(self, times, angles):
+        # Perform Bezier interpolation
+        # For simplicity, let's assume linear interpolation between keyframes
+        # You can replace this with actual Bezier interpolation implementation
+        
+        # Convert lists to numpy arrays for easier manipulation
+        times = np.array(times)
+        angles = np.array(angles)
+        
+        # Perform linear interpolation
+        interpolated_angles = np.interp(perception.time, times, angles)
+        
+        return interpolated_angles
 
         return target_joints
 
