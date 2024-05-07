@@ -78,7 +78,7 @@ class PIDAgent(SparkAgent):
         super(PIDAgent, self).__init__(simspark_ip, simspark_port, teamname, player_id, sync_mode)
         self.joint_names = JOINT_CMD_NAMES.keys()
         number_of_joints = len(self.joint_names)
-        self.joint_controller = PIDController(dt=0.01, size=number_of_joints)
+        self.joint_controller = PIDController(dt=0.02, size=number_of_joints)
         self.target_joints = {k: 0 for k in self.joint_names}
 
     def think(self, perception):

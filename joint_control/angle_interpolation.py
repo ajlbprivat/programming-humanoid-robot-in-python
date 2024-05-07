@@ -21,10 +21,11 @@
 
 
 from pid import PIDAgent
-from keyframes import hello
+# from keyframes import hello
+import keyframes as kf
 import numpy as np
-from time import sleep
-import threading
+# from time import sleep
+# import threading
 from bezier import keyframes_to_points, points_to_graph
 
 
@@ -36,7 +37,7 @@ class AngleInterpolationAgent(PIDAgent):
                  sync_mode=True):
         super(AngleInterpolationAgent, self).__init__(simspark_ip, simspark_port, teamname, player_id, sync_mode)
         self.keyframes = ([], [], [])
-        self.animation_graph = []
+        self.animation_values = {}
 
     def think(self, perception):
         target_joints = self.angle_interpolation(self.keyframes, perception)
@@ -51,25 +52,33 @@ class AngleInterpolationAgent(PIDAgent):
 
         # empty keyframes variable to detect if animation restarted
         if keyframes != ([], [], []):  # new animation
-            all_points = keyframes_to_points(keyframes, self.dt)
-            self.animation_graph = []
+            all_points = keyframes_to_points(keyframes, self.joint_controller.dt)
+            self.animation_values = {}
             for joint_name, points in all_points.items():
-                self.animation_graph[joint_name] = points_to_graph(points, self.dt)
+                # (np x, np y) -> list y
+                self.animation_values[joint_name] = points_to_graph(points, self.joint_controller.dt)[1].tolist()
             self.keyframes = ([], [], [])
 
-        for joint_name, joint_graph in self.animation_graph.items():
-            joint_y = joint_graph[1]
-            target_joints[joint_name] = joint_y.pop(0)
-
+        delete = False
+        for joint_name, joint_values in self.animation_values.items():
+            target_joints[joint_name] = joint_values.pop(0)
+            if len(joint_values) == 1:
+                delete = True
+                break
+        if delete:
+            self.animation_values = {}
+            
         return target_joints
 
-def keyframe_change():
-    agent.keyframes = hello()  # CHANGE DIFFERENT KEYFRAMES
-    sleep(3)
-    print("restart")
-    agent.keyframes = hello()
+# def keyframe_change():
+#     print("start")
+#     agent.keyframes = hello()  # CHANGE DIFFERENT KEYFRAMES
+#     sleep(3)
+#     print("restart")
+#     agent.keyframes = hello()
 
 if __name__ == '__main__':
     agent = AngleInterpolationAgent()
-    threading.Thread(target=keyframe_change, daemon=True).start()
+    # threading.Thread(target=keyframe_change, daemon=True).start()
+    agent.keyframes = kf.hello()
     agent.run()
