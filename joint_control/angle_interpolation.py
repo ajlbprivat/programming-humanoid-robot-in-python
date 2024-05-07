@@ -25,6 +25,7 @@ from keyframes import hello
 import numpy as np
 from time import sleep
 import threading
+from bezier import keyframes_to_points, points_to_graph
 
 
 class AngleInterpolationAgent(PIDAgent):
@@ -35,8 +36,7 @@ class AngleInterpolationAgent(PIDAgent):
                  sync_mode=True):
         super(AngleInterpolationAgent, self).__init__(simspark_ip, simspark_port, teamname, player_id, sync_mode)
         self.keyframes = ([], [], [])
-        self.old_keyframes = ([], [], [])
-        self.keyframe_start_time = 0.0
+        self.animation_graph = []
 
     def think(self, perception):
         target_joints = self.angle_interpolation(self.keyframes, perception)
@@ -49,33 +49,19 @@ class AngleInterpolationAgent(PIDAgent):
         target_joints = {}
         # YOUR CODE HERE
 
+        # empty keyframes variable to detect if animation restarted
         if keyframes != ([], [], []):  # new animation
-            self.old_keyframes = keyframes
+            all_points = keyframes_to_points(keyframes, self.dt)
+            self.animation_graph = []
+            for joint_name, points in all_points.items():
+                self.animation_graph[joint_name] = points_to_graph(points, self.dt)
             self.keyframes = ([], [], [])
-            self.keyframe_start_time = perception.time
 
-        keyframes = self.old_keyframes
-
-        for i in range(len(keyframes[0])):
-            joint_name = keyframes[0][i]
-            joint_times = keyframes[1][i]
-            joint_keys = keyframes[2][i]
-            joint_angles = [sublist[0] for sublist in joint_keys]
-
-            # print(joint_name)
-            # print(joint_times)
-            # print(joint_angles)
-
-            target_joints[joint_name] = self.bezier_interpolation(joint_times, joint_angles, perception.time - self.keyframe_start_time)
+        for joint_name, joint_graph in self.animation_graph.items():
+            joint_y = joint_graph[1]
+            target_joints[joint_name] = joint_y.pop(0)
 
         return target_joints
-
-    def bezier_interpolation(self, times, angles, time):
-        times = np.array(times)
-        angles = np.array(angles)
-        interpolated_angles = np.interp(time, times, angles)
-        
-        return interpolated_angles
 
 def keyframe_change():
     agent.keyframes = hello()  # CHANGE DIFFERENT KEYFRAMES
