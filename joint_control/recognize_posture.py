@@ -43,7 +43,7 @@ class PostureRecognitionAgent(AngleInterpolationAgent):
         # YOUR CODE HERE
         features = extract_features_from_perception(perception)
         posture = poses[self.posture_classifier.predict(features)[0]]
-        print(posture)
+        # print(posture)
         return posture
 
 if __name__ == '__main__':
